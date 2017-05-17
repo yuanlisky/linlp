@@ -164,7 +164,6 @@ class Segment(object):
         临时添加单词，结束程序即消除(将单词加入前缀词典)
         """
         self.check_initialized()
-<<<<<<< HEAD
         freq = int(freq) if freq is not None else self.suggest_freq(word)
         self._update_pfdict(word, freq)  # 更新前缀词典
         # 更新核心词典DictTree
@@ -173,15 +172,6 @@ class Segment(object):
                 self.DT.add([word, tag, freq])
             else:
                 self.DT.add([word, 'nz', freq])
-=======
-        freq = int(freq) if freq else self.suggest_freq(word)
-        self._update_pfdict(word, freq)  # 更新前缀词典
-        # 更新核心词典DictTree
-        if tag:
-            self.DT.add([word, tag, freq])
-        else:
-            self.DT.add([word, 'nz', freq])
->>>>>>> 90482f6... commit
 
     def del_word(self, word):
         """
@@ -624,13 +614,11 @@ class Segment(object):
 
 if '__main__' == __name__:
     a = Segment()
-    a.disable_log()
-    a.initialize()
     # a.enable_HMM()
     a.show_POS()
-    s = '十三123'
-    # a.enable_personrecognition()
-    # a.enable_placerecognition()
+    s = '朝阳区香江北路28号赛特奥莱1-011号'
+    print(a.lcut(s))
+    a.enable_placerecognition()
     print(a.lcut(s))
     a.enable_organizationrecognition()
     print(a.lcut(s))
