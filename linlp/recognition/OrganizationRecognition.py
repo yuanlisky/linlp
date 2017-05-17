@@ -11,6 +11,11 @@ def organizationviterbiSimply(obs, DT, obsDT):
     length = len(obs)
     for no in range(length):
         case = switch.get(obs[no][1], 0)
+<<<<<<< HEAD
+        if not DT.tree.get(obs[no][0]):
+            DT.tree[obs[no][0]] = dict()
+=======
+>>>>>>> 90482f6... commit
         if case == 1:
             if obsDT.tree[obs[no][0]].get('total', 1001) <= 1000:
                 DT.tree[obs[no][0]].setdefault('F', 1000)

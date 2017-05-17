@@ -164,6 +164,7 @@ class Segment(object):
         临时添加单词，结束程序即消除(将单词加入前缀词典)
         """
         self.check_initialized()
+<<<<<<< HEAD
         freq = int(freq) if freq is not None else self.suggest_freq(word)
         self._update_pfdict(word, freq)  # 更新前缀词典
         # 更新核心词典DictTree
@@ -172,6 +173,15 @@ class Segment(object):
                 self.DT.add([word, tag, freq])
             else:
                 self.DT.add([word, 'nz', freq])
+=======
+        freq = int(freq) if freq else self.suggest_freq(word)
+        self._update_pfdict(word, freq)  # 更新前缀词典
+        # 更新核心词典DictTree
+        if tag:
+            self.DT.add([word, tag, freq])
+        else:
+            self.DT.add([word, 'nz', freq])
+>>>>>>> 90482f6... commit
 
     def del_word(self, word):
         """
