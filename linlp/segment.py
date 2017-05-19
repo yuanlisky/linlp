@@ -15,7 +15,6 @@ from linlp.compat import *
 from linlp.log import logger
 from linlp.algorithm import Viterbi
 from linlp.recognition.Recognition import *
-from linlp.algorithm.viterbiMat.prob_trans_Core import prob_trans as prob_trans_core
 
 
 class Segment(object):
@@ -38,7 +37,6 @@ class Segment(object):
         self.personrecognition = False
         self.placerecognition = False
         self.organizationrecognition = False
-        self.ner = False
 
     def __repr__(self):
         return '<Initialization dictionary = %r>' % self.dictionary
@@ -359,7 +357,7 @@ class Segment(object):
 
     def __cut_pos(self, sentence, func):
         sen = func(sentence)  # 按HMM分词或非HMM分词
-        path = Viterbi.viterbiSimply(sen, prob_trans_core, self.DT, 'x')
+        path = Viterbi.viterbiSimply(sen, self.DT)
         buf = ''
         num = ''
         for no, word in enumerate(func(sentence)):
@@ -379,18 +377,6 @@ class Segment(object):
                     else:
                         yield num
                     num = ''
-            # if re_num_f.fullmatch(word):  # 识别数字
-            #     if self.POS:
-            #         if buf:
-            #             yield (buf, 'x')
-            #             buf = ''
-            #         yield (word, 'm')
-            #     else:
-            #         if buf:
-            #             yield buf
-            #             buf = ''
-            #         yield word
-            #     continue
             if path[no] == 'x':  # 未登陆词(也包括符号、字母等不在词典内的字符)
                 buf += word
             else:
@@ -460,7 +446,7 @@ class Segment(object):
             y = r[y][0]
 
     def cut(self, sentence):
-        if self.ner:
+        if self.personrecognition or self.placerecognition:
             for word in self.__cut_for_recognition(sentence):
                 yield word
         else:
@@ -523,102 +509,75 @@ class Segment(object):
     def lcut_for_search(self, *args, **kwargs):
         return list(self.cut_for_search(*args, **kwargs))
 
-    def enable_HMM(self, flag=True):
-        self.HMM = flag
-        if flag:
-            logger.debug('HMM is enable...')
+    def enable_HMM(self, boolean=True):
+        self.HMM = boolean
 
-    def disable_HMM(self):
-        self.HMM = False
-        logger.debug('HMM is closed...')
+    def enable_personrecognition(self, boolean=True):
+        self.personrecognition = boolean
+        if boolean:
+            if not self.PersonDict.tree:
+                person_dictionary = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                    'algorithm/viterbiMat/dictionary/person/nr.txt'))
+                temp_dir = self.temp_dir
+                initialize(person_dictionary, temp_dir, self.PersonDict, 'person')
 
-    def enable_personrecognition(self, flag=True):
-        self.personrecognition = flag
-        if not self.PersonDict.tree:
-            person_dictionary = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                             'algorithm/viterbiMat/dictionary/person/nr.txt'))
-            temp_dir = self.temp_dir
-            initialize(person_dictionary, temp_dir, self.PersonDict, 'person')
-        if flag:
-            self.ner = True
-            logger.debug('Person recognition is enable...')
+    def enable_placerecognition(self, boolean=True):
+        self.placerecognition = boolean
+        if boolean:
+            if not self.PlaceDict.tree:
+                place_dictionary = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                   'algorithm/viterbiMat/dictionary/place/ns.txt'))
+                temp_dir = self.temp_dir
+                initialize(place_dictionary, temp_dir, self.PlaceDict, 'place')
 
-    def disable_personrecognition(self):
-        self.personrecognition = False
-        logger.debug('Person recognition is closed...')
-
-    def enable_placerecognition(self, flag=True):
-        self.placerecognition = flag
-        if not self.PlaceDict.tree:
-            place_dictionary = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                            'algorithm/viterbiMat/dictionary/place/ns.txt'))
-            temp_dir = self.temp_dir
-            initialize(place_dictionary, temp_dir, self.PlaceDict, 'place')
-        if flag:
-            self.ner = True
-            logger.debug('Place recognition is enable...')
-
-    def disable_placerecognition(self):
-        self.placerecognition = False
-        logger.debug('Place recognition is closed...')
-
-    def enable_organizationrecognition(self, flag=True):
-        self.organizationrecognition = flag
-        if not self.OrganizationDict.tree:
-            organization_dictionary = os.path.abspath(os.path.join(
-                                                      os.path.dirname(__file__),
-                                                      'algorithm/viterbiMat/dictionary/organization/nt.txt'))
-            temp_dir = self.temp_dir
-            initialize(organization_dictionary, temp_dir, self.OrganizationDict, 'organization')
-        if flag:
+    def enable_organizationrecognition(self, boolean=True):
+        self.organizationrecognition = boolean
+        if boolean:
             if not self.personrecognition:
                 self.enable_personrecognition()
             if not self.placerecognition:
                 self.enable_placerecognition()
-            self.ner = True
-            logger.debug('Organization recognition is enable...')
+            if not self.OrganizationDict.tree:
+                organization_dictionary = os.path.abspath(os.path.join(
+                                        os.path.dirname(__file__),
+                                        'algorithm/viterbiMat/dictionary/organization/nt.txt'))
+                temp_dir = self.temp_dir
+                initialize(organization_dictionary, temp_dir, self.OrganizationDict, 'organization')
 
-    def disable_organization(self):
-        self.organizationrecognition = False
-        logger.debug('Organization recognition is closed...')
+    def enable_all(self, boolean=True):
+        if boolean:
+            self.enable_personrecognition()
+            self.enable_placerecognition()
+            self.enable_organizationrecognition()
+        else:
+            self.personrecognition = False
+            self.placerecognition = False
+            self.organizationrecognition = False
 
-    def enable_all(self):
-        self.enable_personrecognition()
-        self.enable_placerecognition()
-        self.enable_organizationrecognition()
-        logger.debug('All the recognitions are enable...')
-
-    def disable_all(self):
-        self.personrecognition = False
-        self.placerecognition = False
-        self.organizationrecognition = False
-        self.ner = False
-        logger.debug('All the recognitions are closed...')
-
-    def show_POS(self):
-        self.POS = True
-        logger.debug('Show you the posseg...')
-
-    def disable_POS(self):
-        self.POS = False
-        logger.debug("Don't show you the posseg...")
+    def enable_POS(self, boolean=True):
+        if boolean:
+            self.POS = True
+        else:
+            self.POS = False
 
     @staticmethod
-    def enable_log():
-        logger.setLevel(1)
-
-    @staticmethod
-    def disable_log():
-        logger.setLevel(0)
+    def enable_log(boolean=True):
+        if boolean:
+            logger.setLevel(1)
+        else:
+            logger.setLevel(0)
 
 
 if '__main__' == __name__:
     a = Segment()
-    # a.enable_HMM()
-    a.show_POS()
-    s = '朝阳区香江北路28号赛特奥莱1-011号'
+    a.enable_log(False)
+    a.enable_POS()
+    s = '朝阳区崔各庄乡来广营东路费家村西北口20米'
+    # s = '北京市大兴区凉水河二街泰河园四里三区'
     print(a.lcut(s))
+    # a.enable_personrecognition()
+    # print(a.lcut(s))
     a.enable_placerecognition()
     print(a.lcut(s))
-    a.enable_organizationrecognition()
-    print(a.lcut(s))
+    # a.enable_organizationrecognition()
+    # print(a.lcut(s))

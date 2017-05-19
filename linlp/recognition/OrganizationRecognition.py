@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from linlp.algorithm.Viterbi import viterbiRecognition
+from linlp.algorithm.Viterbi import viterbiRecognitionSimply
 from linlp.algorithm.viterbiMat.prob_trans_organization import prob_trans as trans_p
 from linlp.algorithm.viterbiMat.prob_emit_organization import prob_emit as emit_p
-from linlp.algorithm.viterbiMat.prob_start_organization import prob_start as start_p
 
 
 def organizationviterbiSimply(obs, DT, obsDT):
@@ -38,5 +37,5 @@ def organizationviterbiSimply(obs, DT, obsDT):
             obs[no] = ('未##时', obs[no][1])
         elif not DT.tree.get(obs[no][0]):  # 不在机构词典时
             DT.tree[obs[no][0]] = {'Z': 21149365}
-    path = viterbiRecognition(obs, start_p, trans_p, emit_p, DT)
+    path = viterbiRecognitionSimply(obs, trans_p, emit_p, DT)
     return path[1:-1]

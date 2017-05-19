@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from linlp.algorithm.Viterbi import viterbiRecognition
+from linlp.algorithm.Viterbi import viterbiRecognitionSimply
 from linlp.algorithm.viterbiMat.prob_trans_place import prob_trans as trans_p
 from linlp.algorithm.viterbiMat.prob_emit_place import prob_emit as emit_p
-from linlp.algorithm.viterbiMat.prob_start_place import prob_start as start_p
 
 
 def placeviterbiSimply(obs, DT, obsDT):
@@ -11,7 +10,7 @@ def placeviterbiSimply(obs, DT, obsDT):
     for no in range(length):
         if (obs[no][1] == 'ns') and (obsDT.tree[obs[no][0]].get('total', 1001) <= 1000):
             if DT.tree.get(obs[no][0]):
-                if len(obs[no][0]) <= 3:
+                if len(obs[no][0]) < 3:
                     DT.tree[obs[no][0]].setdefault('H', 1)
                     DT.tree[obs[no][0]].setdefault('G', 1)
                 else:
@@ -35,5 +34,5 @@ def placeviterbiSimply(obs, DT, obsDT):
             obs[no] = ('未##时', obs[no][1])
         elif not DT.tree.get(obs[no][0]):  # 不在地名词典时
             DT.tree[obs[no][0]] = {'Z': 21619956}
-    path = viterbiRecognition(obs, start_p, trans_p, emit_p, DT)
+    path = viterbiRecognitionSimply(obs, trans_p, emit_p, DT)
     return path[1:-1]

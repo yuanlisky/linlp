@@ -74,7 +74,7 @@ def recognition(obs, path, AC, types):
                 nexti = pattern[1] + 1
                 while match:
                     pattern = match.pop(0)
-                    if pattern[0] > nexti:
+                    if pattern[0] >= nexti:
                         break
                 else:
                     pattern = None

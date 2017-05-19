@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-from linlp.algorithm.Viterbi import viterbiRecognition
+from linlp.algorithm.Viterbi import viterbiRecognitionPerson
 from linlp.algorithm.viterbiMat.prob_trans_person import prob_trans as trans_p
 from linlp.algorithm.viterbiMat.prob_emit_person import prob_emit as emit_p
-from linlp.algorithm.viterbiMat.prob_start_person import prob_start as start_p
 
 
 def personviterbiSimply(obs, DT, obsDT):
-    obs = [('始##始', 'begin')] + obs + [('末##末', 'end')]
+    # obs = [('始##始', 'begin')] + obs + [('末##末', 'end')]
     switch = {'nr': 1, 'nnt': 2}
     length = len(obs)
     for no in range(length):
@@ -23,7 +22,7 @@ def personviterbiSimply(obs, DT, obsDT):
                 DT.tree[obs[no][0]] = {'G': 1, 'K': 1}
             else:
                 DT.tree[obs[no][0]] = {'A': 22202445}
-        elif obs[no][0] == '始##始':
-            DT.tree[obs[no][0]] = {'A': 22202445}
-    path = viterbiRecognition(obs, start_p, trans_p, emit_p, DT)
-    return path[1: -1]
+        # elif obs[no][0] == '始##始':
+        #     DT.tree[obs[no][0]] = {'A': 22202445}
+    path = viterbiRecognitionPerson(obs, trans_p, emit_p, DT)
+    return path

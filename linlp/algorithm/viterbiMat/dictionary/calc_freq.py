@@ -11,7 +11,7 @@ __all__ = ['calc_MAT', ]
 
 def calc_MAT(dictfile, trfile):
     MIN_FLOAT = -3.14e+100
-    POS_freq = {}  # {'词性': 频数}
+    POS_freq = {}  # {'词性': 频数} 词性总频数
     dict_line = {}  # {'词':{'词性1':频数, '词性2':频数}}
 
     with open(dictfile, 'r', encoding='utf-8') as f:
@@ -112,4 +112,4 @@ def output(start_p, trans_p, emit_p, name):
 if __name__ == '__main__':
     s, t, e = calc_MAT(r'.\person\nr.txt',
                        r'.\person\nr.tr.txt')
-    output(s, t, e, 'person')
+    # output(s, t, e, 'person')
