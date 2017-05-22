@@ -73,13 +73,7 @@ def viterbiRecognitionSimply(obs, trans_p, emit_p, DT):
                 cost = prob
                 p = state
         tagList.append(p)
-    end = list()
-    for e in DT.tree.get(obs[-1][0]).keys():
-        if e == 'total':
-            continue
-        end.append(e)
-    (prob, state) = max((V[index_i][y], y) for y in end)
-    tagList.append(state)
+    tagList.append(tagList[0])
     return tagList
 
 

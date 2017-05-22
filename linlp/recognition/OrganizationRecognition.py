@@ -6,7 +6,7 @@ from linlp.algorithm.viterbiMat.prob_emit_organization import prob_emit as emit_
 
 def organizationviterbiSimply(obs, DT, obsDT):
     obs = [('始##始', 'begin')] + obs + [('末##末', 'end')]
-    switch = {'nrf': 1, 'ni': 2, 'nic': 2, 'nis': 2, 'nit': 2, 'm': 3}
+    switch = {'nz': 1, 'ni': 2, 'nic': 2, 'nis': 2, 'nit': 2, 'm': 3}
     length = len(obs)
     for no in range(length):
         case = switch.get(obs[no][1], 0)
@@ -18,7 +18,8 @@ def organizationviterbiSimply(obs, DT, obsDT):
         elif case == 2:
             DT.tree[obs[no][0]].setdefault('K', 1000)
             DT.tree[obs[no][0]].setdefault('D', 1000)
-        elif case == 3:
+        elif case == 3 and \
+                (obsDT.tree[obs[no][0]].get('total') != obsDT.tree[obs[no][0]].get(obs[no][1])):
             if DT.tree.get(obs[no][0]):
                 DT.tree[obs[no][0]].setdefault('M', 1000)
             else:
