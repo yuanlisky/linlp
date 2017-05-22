@@ -71,6 +71,7 @@ class Ahocorasick(object):
                     break
                 while (word not in p.next) and (p != self.__root):
                     p = p.fail
+                    startWordIndex += 1
                 if p == self.__root:
                     break
         return result
@@ -89,17 +90,17 @@ class Ahocorasick(object):
 
 
 if __name__ == '__main__':
-    # import time
+    import time
     ah = Ahocorasick()
-    x = ["CH", "CDH", "CDEH", "GH"]
+    x = ["CD", "CDH", "CCDH", "HY", 'DH', 'CCD']
     for i in x:
         ah.addWord(i)
     ah.make()
-    text = ['G', 'G', 'C', 'C', 'H', 'C', 'D', 'E', 'H']
+    text = ['G', 'G', 'C', 'D', 'H', 'C', 'C', 'D', 'H', 'Y']
     # 可以是字符串，也可以是列表
     # [0-南翔, 1-向, 2-宁夏, 3-固原市, 4-彭, 5-阳, 6-县, 7-红, 8-河镇, 9-黑, 10-牛, 11-沟, 12-村, 13-捐赠, 14-了, 15-挖掘机]
-    # start = time.clock()
+    start = time.clock()
     res = ah.search(text)
-    # end = time.clock()
+    end = time.clock()
     print(res)
-    # print(end-start)
+    print(end - start)
