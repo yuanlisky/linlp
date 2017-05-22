@@ -415,24 +415,39 @@ class Segment(object):
         sen = list(self.__cut_pos(sentence, self.__cut_NO_HMM))
         self.POS = flag
         r = {}
+        sign = 0
         if self.personrecognition:
             res_person = personrecognition(sen, self.PersonDict, self.DT)
             dictadd(r, res_person)
+            sign += 1
         if self.placerecognition:
             res_place = placerecognition(sen, self.PlaceDict, self.DT)
             dictadd(r, res_place)
+            sign += 2
         if self.organizationrecognition:
+            if sign == 0:
+                res_person = personrecognition(sen, self.PersonDict, self.DT)
+                res_place = placerecognition(sen, self.PlaceDict, self.DT)
+                dictadd(r, res_person)
+                dictadd(r, res_place)
+            elif sign == 1:
+                res_place = placerecognition(sen, self.PlaceDict, self.DT)
+                dictadd(r, res_place)
+            elif sign == 2:
+                res_person = personrecognition(sen, self.PersonDict, self.DT)
+                dictadd(r, res_person)
             y = 0
             buf = ''
             org_list = []
             while y < len(sen):
                 for p in range(y, r[y][0]):
                     buf += sen[p][0]
-                    org_list.append((buf, r[y][1]))
+                org_list.append((buf, r[y][1]))
                 buf = ''
                 y = r[y][0]
             res_organization = organizationrecognition(org_list, self.OrganizationDict, self.DT)
-            dictadd(r, res_organization)
+            r = res_organization
+            sen = org_list
         y = 0
         buf = ''
         while y < len(sen):
@@ -446,7 +461,7 @@ class Segment(object):
             y = r[y][0]
 
     def cut(self, sentence):
-        if self.personrecognition or self.placerecognition:
+        if self.personrecognition or self.placerecognition or self.organizationrecognition:
             for word in self.__cut_for_recognition(sentence):
                 yield word
         else:
@@ -532,6 +547,8 @@ class Segment(object):
 
     def enable_organizationrecognition(self, boolean=True):
         self.organizationrecognition = boolean
+        p1 = self.personrecognition
+        p2 = self.placerecognition
         if boolean:
             if not self.personrecognition:
                 self.enable_personrecognition()
@@ -543,6 +560,8 @@ class Segment(object):
                                         'algorithm/viterbiMat/dictionary/organization/nt.txt'))
                 temp_dir = self.temp_dir
                 initialize(organization_dictionary, temp_dir, self.OrganizationDict, 'organization')
+        self.personrecognition = p1
+        self.placerecognition = p2
 
     def enable_all(self, boolean=True):
         if boolean:
@@ -573,11 +592,4 @@ if '__main__' == __name__:
     a.enable_log(False)
     a.enable_POS()
     s = '朝阳区崔各庄乡来广营东路费家村西北口20米'
-    # s = '北京市大兴区凉水河二街泰河园四里三区'
     print(a.lcut(s))
-    # a.enable_personrecognition()
-    # print(a.lcut(s))
-    a.enable_placerecognition()
-    print(a.lcut(s))
-    # a.enable_organizationrecognition()
-    # print(a.lcut(s))
