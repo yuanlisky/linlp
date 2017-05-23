@@ -15,11 +15,12 @@ def organizationviterbiSimply(obs, DT, obsDT):
         if case == 1:
             if obsDT.tree[obs[no][0]].get('total', 1001) <= 1000:
                 DT.tree[obs[no][0]].setdefault('F', 1000)
+            else:
+                DT.tree[obs[no][0]].setdefault('Z', 21149365)
         elif case == 2:
             DT.tree[obs[no][0]].setdefault('K', 1000)
             DT.tree[obs[no][0]].setdefault('D', 1000)
-        elif case == 3 and \
-                (obsDT.tree[obs[no][0]].get('total') != obsDT.tree[obs[no][0]].get(obs[no][1])):
+        elif case == 3 and len(obsDT.tree.get(obs[no][0], 'zz')) != 2:
             if DT.tree.get(obs[no][0]):
                 DT.tree[obs[no][0]].setdefault('M', 1000)
             else:

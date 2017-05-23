@@ -591,5 +591,8 @@ if '__main__' == __name__:
     a = Segment()
     a.enable_log(False)
     a.enable_POS()
-    s = '朝阳区崔各庄乡来广营东路费家村西北口20米'
+    # s = '朝阳区崔各庄乡来广营东路费家村西北口20米'
+    s = 'ACE箱包店'
+    a.enable_organizationrecognition()
+    a.lcut(s)
     print(a.lcut(s))

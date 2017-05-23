@@ -6,7 +6,6 @@ from linlp.const import MIN_FLOAT
 from linlp.algorithm.viterbiMat.prob_start_jieba import start_p_jieba
 from linlp.algorithm.viterbiMat.prob_trans_jieba import trans_p_jieba
 from linlp.algorithm.viterbiMat.prob_emit_jieba import emit_p_jieba
-from linlp.algorithm.viterbiMat.prob_trans_Core import prob_trans
 
 PrevStatus = {
     'B': 'ES',
@@ -57,7 +56,6 @@ def viterbiRecognitionSimply(obs, trans_p, emit_p, DT):
         if y == 'total':
             continue
         V[0][y] = trans_p[tagList[0]][y] + emit_p[y].get(obs[1][0], -100)
-    index_i = 0
     for t in range(2, len(obs)):
         index_i = 1 - t & 1
         V[index_i] = {}
@@ -80,22 +78,15 @@ def viterbiRecognitionSimply(obs, trans_p, emit_p, DT):
 def viterbiSimply(obs, DT):
     path = ['begin']
     for no, v in enumerate(obs):
-        prob = MIN_FLOAT
         freq = 0
         state = 'x'
-        state_temp = 'x'
         if DT.tree.get(v):
             for POS, f in DT.tree.get(v).items():
                 if POS == 'total':
                     continue
-                if prob < prob_trans[path[no]][POS]:
-                    prob = prob_trans[path[no]][POS]
-                    state = POS
                 if freq < f:
                     freq = f
-                    state_temp = POS
-                if prob == MIN_FLOAT:
-                    state = state_temp
+                    state = POS
         else:
             state = 'x'
         path.append(state)
