@@ -4,7 +4,9 @@ from linlp.algorithm.viterbiMat.prob_trans_place import prob_trans as trans_p
 from linlp.algorithm.viterbiMat.prob_emit_place import prob_emit as emit_p
 
 
-def placeviterbiSimply(obs, DT, obsDT):
+def placeviterbiSimply(obs, DT, obsDT, debug):
+    if debug:
+        x = obs
     obs = [('始##始', 'begin')] + obs + [('末##末', 'end')]
     length = len(obs)
     for no in range(length):
@@ -35,4 +37,21 @@ def placeviterbiSimply(obs, DT, obsDT):
         elif not DT.tree.get(obs[no][0]):  # 不在地名词典时
             DT.tree[obs[no][0]] = {'Z': 21619956}
     path = viterbiRecognitionSimply(obs, trans_p, emit_p, DT)
+    if debug:
+        s = ''
+        t = '['
+        l = len(x)
+        for i in range(l):
+            word = x[i]
+            s += '[' + word[0] + ' '
+            t += word[0]
+            for k, v in DT.tree[obs[i + 1][0]].items():
+                if k == 'total':
+                    continue
+                s += k + ':' + str(v) + ' '
+            s += ']'
+            t += '/' + path[i + 1] + ', '
+        t += ']'
+        print('地名角色观察: %s' % s)
+        print('地名角色标注: %s' % t)
     return path[1:-1]

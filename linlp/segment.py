@@ -37,6 +37,7 @@ class Segment(object):
         self.personrecognition = False
         self.placerecognition = False
         self.organizationrecognition = False
+        self.debug = False
 
     def __repr__(self):
         return '<Initialization dictionary = %r>' % self.dictionary
@@ -417,24 +418,24 @@ class Segment(object):
         r = {}
         sign = 0
         if self.personrecognition:
-            res_person = personrecognition(sen, self.PersonDict, self.DT)
+            res_person = personrecognition(sen, self.PersonDict, self.DT, self.debug)
             dictadd(r, res_person)
             sign += 1
         if self.placerecognition:
-            res_place = placerecognition(sen, self.PlaceDict, self.DT)
+            res_place = placerecognition(sen, self.PlaceDict, self.DT, self.debug)
             dictadd(r, res_place)
             sign += 2
         if self.organizationrecognition:
             if sign == 0:
-                res_person = personrecognition(sen, self.PersonDict, self.DT)
-                res_place = placerecognition(sen, self.PlaceDict, self.DT)
+                res_person = personrecognition(sen, self.PersonDict, self.DT, self.debug)
+                res_place = placerecognition(sen, self.PlaceDict, self.DT, self.debug)
                 dictadd(r, res_person)
                 dictadd(r, res_place)
             elif sign == 1:
-                res_place = placerecognition(sen, self.PlaceDict, self.DT)
+                res_place = placerecognition(sen, self.PlaceDict, self.DT, self.debug)
                 dictadd(r, res_place)
             elif sign == 2:
-                res_person = personrecognition(sen, self.PersonDict, self.DT)
+                res_person = personrecognition(sen, self.PersonDict, self.DT, self.debug)
                 dictadd(r, res_person)
             y = 0
             buf = ''
@@ -445,7 +446,7 @@ class Segment(object):
                 org_list.append((buf, r[y][1]))
                 buf = ''
                 y = r[y][0]
-            res_organization = organizationrecognition(org_list, self.OrganizationDict, self.DT)
+            res_organization = organizationrecognition(org_list, self.OrganizationDict, self.DT, self.debug)
             r = res_organization
             sen = org_list
         y = 0
@@ -564,20 +565,15 @@ class Segment(object):
         self.placerecognition = p2
 
     def enable_all(self, boolean=True):
-        if boolean:
-            self.enable_personrecognition()
-            self.enable_placerecognition()
-            self.enable_organizationrecognition()
-        else:
-            self.personrecognition = False
-            self.placerecognition = False
-            self.organizationrecognition = False
+        self.enable_personrecognition(boolean)
+        self.enable_placerecognition(boolean)
+        self.enable_organizationrecognition(boolean)
 
     def enable_POS(self, boolean=True):
-        if boolean:
-            self.POS = True
-        else:
-            self.POS = False
+        self.POS = boolean
+
+    def enable_debug(self, boolean=True):
+        self.debug = boolean
 
     @staticmethod
     def enable_log(boolean=True):
@@ -591,8 +587,7 @@ if '__main__' == __name__:
     a = Segment()
     a.enable_log(False)
     a.enable_POS()
-    # s = '朝阳区崔各庄乡来广营东路费家村西北口20米'
-    s = 'ACE箱包店'
+    a.enable_debug()
+    s = '朝阳区崔各庄乡来广营东路费家村西北口20米'
     a.enable_organizationrecognition()
-    a.lcut(s)
     print(a.lcut(s))

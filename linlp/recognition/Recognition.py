@@ -51,10 +51,11 @@ def _setup_cache(dictionary, temp_dir, DictTree, cachename):
     return cache_file
 
 
-def recognition(obs, path, AC, types):
+def recognition(obs, path, AC, types, debug):
     sentence = []
     pos = []
     res = {}
+    s = []
     length = len(obs)
     for no in range(length):
         sentence.append(obs[no][0])
@@ -71,6 +72,10 @@ def recognition(obs, path, AC, types):
                     continue
             if pattern[0] == nexti:
                 res[pattern[0]] = (pattern[1]+1, types)
+                if debug:
+                    k = ''.join(path[pattern[0]:pattern[1]+1])
+                    v = ''.join(sentence[pattern[0]:pattern[1]+1])
+                    s.append((k, v))
                 nexti = pattern[1] + 1
                 while match:
                     pattern = match.pop(0)
@@ -84,24 +89,36 @@ def recognition(obs, path, AC, types):
         else:
             res[nexti] = (nexti + 1, pos[nexti])
             nexti += 1
+    return res, s
+
+
+def personrecognition(sen, DT, obsDT, debug):
+    path = personviterbiSimply(sen, DT, obsDT, debug)
+    res, s = recognition(sen, path, person, 'nr', debug)
+    if s:
+        for word in s:
+            print('识别出人名: %s %s' % (word[1], word[0]))
+        print('')
     return res
 
 
-def personrecognition(sen, DT, obsDT):
-    path = personviterbiSimply(sen, DT, obsDT)
-    res = recognition(sen, path, person, 'nr')
+def placerecognition(sen, DT, obsDT, debug):
+    path = placeviterbiSimply(sen, DT, obsDT, debug)
+    res, s = recognition(sen, path, place, 'ns', debug)
+    if s:
+        for word in s:
+            print('识别出地名: %s %s' % (word[1], word[0]))
+        print('')
     return res
 
 
-def placerecognition(sen, DT, obsDT):
-    path = placeviterbiSimply(sen, DT, obsDT)
-    res = recognition(sen, path, place, 'ns')
-    return res
-
-
-def organizationrecognition(sen, DT, obsDT):
-    path = organizationviterbiSimply(sen, DT, obsDT)
-    res = recognition(sen, path, organization, 'nt')
+def organizationrecognition(sen, DT, obsDT, debug):
+    path = organizationviterbiSimply(sen, DT, obsDT, debug)
+    res, s = recognition(sen, path, organization, 'nt', debug)
+    if s:
+        for word in s:
+            print('识别出机构名: %s %s' % (word[1], word[0]))
+        print('')
     return res
 
 
