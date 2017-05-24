@@ -414,6 +414,8 @@ class Segment(object):
         flag = self.POS
         self.POS = True
         sen = list(self.__cut_pos(sentence, self.__cut_NO_HMM))
+        if self.debug:
+            print('粗分结果: ', sen, '\n')
         self.POS = flag
         r = {}
         sign = 0
