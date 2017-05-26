@@ -19,6 +19,7 @@ from linlp.recognition.Recognition import *
 
 class Segment(object):
     def __init__(self):
+        """初始化类属性"""
         self.DT = DictTree()
         self.PersonDict = DictTree()
         self.PlaceDict = DictTree()
@@ -26,7 +27,7 @@ class Segment(object):
         # 字典绝对路径(python格式)
         self.default_dictionary = os.path.abspath(os.path.join(os.path.dirname(__file__), 'dict.txt'))
         self.dictionary = self.default_dictionary
-        self.FREQ = {}  # 前缀词典
+        self.FREQ = dict()  # 前缀词典
         self.total = 0
         self.temp_dir = tempfile.gettempdir()  # 缓存路径
         self.cache_file = None
@@ -44,7 +45,9 @@ class Segment(object):
 
     def initialize(self):
         """
-        初始化
+        初始化，作用为加载词典数据
+        若主词典文件的最后修改时间早于缓存的建立时间
+        则不建立新的缓存，直接从已存在的缓存文件中加载词典数据
         """
         self._setup_cache()
         if not self.cached:  # 没有建立新缓存则直接从缓存载入
@@ -60,17 +63,31 @@ class Segment(object):
     def set_dictionary(self, dictionary=None):
         """
         设置主词典
-        :param dictionary: 词典文件，不指定时为默认词典
+        参数:
+            - dictionary: 主词典文件的完整路径，当不指定时为使用默认词典
+        词典结构：
+            词语1 词性1 频数1 词性2 频数2 ...
+            词语2 词性1 频数1 词性2 频数2 ...
+            
+            中间以空格隔开，或者
+            
+            词语1
+            词语2
+            只有词语，不指定词性和频数
+            那么词性默认为'nz'，频数由suggest_freq计算
         """
-        self.FREQ = {}
+        self.FREQ = dict()
         self.total = 0
         self.dictionary = os.path.abspath(dictionary) if dictionary else self.default_dictionary
         self.initialize()
 
     def add_dictionary(self, dictionary):
         """
-        添加词典到主词典生成的前缀词典中
-        :param dictionary:要添加的词典
+        添加词典到主词典生成的词典数据中
+        参数：
+            - dictionary: 词典文件的完整路径，将文件中的词语、词性、频数，添加到内存的词典数据中
+        词典结构：
+            同主词典
         """
         self.check_initialized()
         dictionary = os.path.abspath(dictionary)
@@ -85,19 +102,19 @@ class Segment(object):
                         raise ValueError('dictionary file %s must be utf-8' % dict_name)
                 if not line:
                     continue
-                word, freq, tag = line.split(' ')
-                if freq is not None:
-                    freq = freq.strip()
-                if tag is not None:
-                    tag = tag.strip()
-                    self.DT.add([word, tag, int(freq)])
-                else:
-                    self.DT.add([word, 'nz', int(freq)])
-                self._update_pfdict(word, int(freq))
+                line = line.split(' ')
+                word = line[0]
+                if len(line) == 1:
+                    freq = self.suggest_freq(word)
+                    tag = 'nz'
+                    line = [word, tag, freq]
+                self.DT.add(line)
+                freq = self.DT.tree[line[0]]['total']
+                self._update_pfdict(word, freq)
 
     def _gen_pfdict(self):
         """
-        通过字典建立前缀词典
+        使用主词典，建立词典数据
         """
         with open(self.dictionary, 'rb') as f:
             dict_name = f.name
@@ -112,13 +129,20 @@ class Segment(object):
                     continue
                 line = line.split(' ')
                 word = line[0]
-                self.DT.add(line)  # 覆盖
+                if len(line) == 1:
+                    freq = self.suggest_freq(word)
+                    tag = 'nz'
+                    line = [word, tag, freq]
+                self.DT.add(line)
                 freq = self.DT.tree[line[0]]['total']
-                self._update_pfdict(word, int(freq))
+                self._update_pfdict(word, freq)
 
     def _update_pfdict(self, word, freq):
         """
-        更新前缀词典
+        更新词典数据
+        参数：
+            - word: 加入前缀词典的词语，str类型
+            - freq: 加入词语的频数，int类型
         """
         try:
             if self.FREQ.get(word, 0):  # word 在FREQ中
@@ -137,7 +161,8 @@ class Segment(object):
 
     def _setup_cache(self):
         """
-        根据绝对路径，建立缓存,缓存命名根据主词典绝对路径MD5值
+        若缓存文件已存在且最后修改时间早于主词典，则不建立新缓存数据
+        否则根据主词典，建立词典数据，并将数据存入新建缓存中
         """
         cache_file_name = "linlp.cache" \
             if self.dictionary == self.default_dictionary \
@@ -158,9 +183,13 @@ class Segment(object):
             self.cached = True
         return  # 建立了新缓存文件
 
-    def add_word(self, word, freq=None, tag=None):
+    def add_word(self, word, tag=None, freq=None):
         """
-        临时添加单词，结束程序即消除(将单词加入前缀词典)
+        动态添加词语，临时添加，结束程序即消除(将单词加入内存中的词典数据)
+        参数：
+            - word: 加入词典数据的词语，str类型
+            - tag: 加入词语的词性，str类型
+            - freq: 加入词语的频数，int类型
         """
         self.check_initialized()
         freq = int(freq) if freq is not None else self.suggest_freq(word)
@@ -174,13 +203,19 @@ class Segment(object):
 
     def del_word(self, word):
         """
-        从前缀词典中删除词语
+        从词典数据中删除词语
+        参数：
+            - word: 要删除的词语，str类型
         """
-        self.add_word(word, 0)
+        self.add_word(word, freq=0)
+        if self.DT.tree.get(word):
+            del(self.DT.tree[word])
 
     def suggest_freq(self, word):
         """
-        添加词语推荐频数
+        添加的词语推荐频数
+        参数：
+            - word: 加入前缀词典的词语，str类型
         """
         self.check_initialized()
         ftotal = float(self.total)
@@ -196,6 +231,8 @@ class Segment(object):
     def set_temp_dir(self, path=tempfile.gettempdir()):
         """
         设置缓存路径
+        参数：
+            - path: 缓存的路径，路径格式，默认设置为系统缓存路径
         """
         if not os.path.isdir(path):
             os.makedirs(path)
@@ -206,15 +243,21 @@ class Segment(object):
         logger.debug("The cache file directory is changed to: %s ..." % self.temp_dir)
 
     def check_initialized(self):
+        """
+        检查是否初始化，若未初始化，则进行初始化，加载词典数据
+        """
         if not self.initialized:
             self.initialize()
 
     def _get_DAG(self, sentence):
+        """
+        根据前缀词典，获取句子sentence的有向无环图
+        """
         self.check_initialized()
-        DAG = {}
+        DAG = dict()
         N = len(sentence)
         for k in range(N):
-            tmplist = []
+            tmplist = list()
             i = k
             frag = sentence[k]
             while i < N and frag in self.FREQ:
@@ -227,21 +270,30 @@ class Segment(object):
             DAG[k] = tmplist
         return DAG
 
-    def _calc(self, sentence, DAG, route):
+    def _calc(self, sentence, DAG):
+        """
+        计算句子所生成有向无环图的最大概率路径
+        参数：
+            - sentence: 待分词的句子，str类型
+            - DAG: sentence的有向无环图
+        返回：
+            - route: 记录sentence的有向无环图的最大概率路径，dict类型
+        """
         N = len(sentence)
+        route = dict()
         route[N] = (0, 0)
         logtotal = math.log(self.total)
         for idx in range(N-1, -1, -1):  # 从后往前遍历每个分词
             route[idx] = max((math.log(self.FREQ.get(sentence[idx:x+1]) or 1) -
                               logtotal+route[x+1][0], x) for x in DAG[idx])  # 取log防止向下溢出,取过log后除法变为减法
+        return route
 
     def __cut_NO_HMM(self, sentence):
         """
         根据前缀词典进行最大概率路径分词，并切分出英文字符串和数字
         """
         DAG = self._get_DAG(sentence)
-        route = {}
-        self._calc(sentence, DAG, route)
+        route = self._calc(sentence, DAG)
         x = 0
         N = len(sentence)
         buf = ''
@@ -249,8 +301,8 @@ class Segment(object):
             y = route[x][1] + 1  # x到y组合成词概率最大 route = {start: (prob, end)}
             l_word = sentence[x:y]
             # <editor-fold desc="将英文字符串或数字合并">
-            if re_eng.match(l_word) or (l_word == '.'):
-                if buf == '' and re_eng.match(l_word):
+            if re_eng.match(l_word) or (l_word == '.') or (l_word == '-') or (l_word == '+'):
+                if buf == '' and l_word != '.':
                     buf += l_word
                     x = y
                 elif re_en.match(buf) and re_en_1.match(l_word):
@@ -315,11 +367,10 @@ class Segment(object):
 
     def __cut_HMM(self, sentence):
         """
-        在最大概率路径的基础上，根据标注'BMES'进行HMM分词
+        在按最大概率路径分词的基础上，根据标注'BMES'对未登录词进行HMM分词
         """
         DAG = self._get_DAG(sentence)
-        route = {}
-        self._calc(sentence, DAG, route)
+        route = self._calc(sentence, DAG)
         x = 0
         buf = ''
         N = len(sentence)
@@ -417,7 +468,7 @@ class Segment(object):
         if self.debug:
             print('粗分结果: ', sen, '\n')
         self.POS = flag
-        r = {}
+        r = dict()
         sign = 0
         if self.personrecognition:
             res_person = personrecognition(sen, self.PersonDict, self.DT, self.debug)
@@ -441,7 +492,7 @@ class Segment(object):
                 dictadd(r, res_person)
             y = 0
             buf = ''
-            org_list = []
+            org_list = list()
             while y < len(sen):
                 for p in range(y, r[y][0]):
                     buf += sen[p][0]
@@ -464,6 +515,11 @@ class Segment(object):
             y = r[y][0]
 
     def cut(self, sentence):
+        """
+        主要分词函数，根据设置对句子进行分词，返回生成器
+        参数：
+            - sentence: 待分词的句子，str类型
+        """
         if self.personrecognition or self.placerecognition or self.organizationrecognition:
             for word in self.__cut_for_recognition(sentence):
                 yield word
@@ -472,6 +528,9 @@ class Segment(object):
                 yield word
 
     def lcut(self, *args, **kwargs):
+        """
+        以列表形式返回cut的分词结果
+        """
         return list(self.cut(*args, **kwargs))
 
     def __cut_all(self, sentence):
@@ -488,6 +547,11 @@ class Segment(object):
                         old_j = j
 
     def cut_for_all(self, sentence):
+        """
+        全模式分词，把句子中所有的可以成词的词语都扫描出来，返回生成器
+        参数：
+            - sentence: 待分词的句子，str类型
+        """
         blocks = re_han_cut_all.split(sentence)  # 切割成汉字，非汉字
         for blk in blocks:
             if not blk:
@@ -504,9 +568,17 @@ class Segment(object):
                         yield x
 
     def lcut_for_all(self, *args, **kwargs):
+        """
+        以列表形式返回cut_for_all的分词结果
+        """
         return list(self.cut_for_all(*args, **kwargs))
 
     def cut_for_search(self, sentence):
+        """
+        搜索模式分词，对采用HMM分词的结果中的长词再次进行切分，返回生成器
+        参数：
+            - sentence: 待分词的句子，str类型
+        """
         flag = self.HMM
         self.HMM = True
         words = self.cut(sentence)
@@ -525,71 +597,104 @@ class Segment(object):
             yield w
 
     def lcut_for_search(self, *args, **kwargs):
+        """
+        以列表形式返回cut_for_search的分词结果
+        """
         return list(self.cut_for_search(*args, **kwargs))
 
     def enable_HMM(self, boolean=True):
+        """
+        开关HMM分词，主要用于识别未登录词
+        参数：
+            - boolean: True->开启；False->关闭 
+        """
         self.HMM = boolean
 
     def enable_personrecognition(self, boolean=True):
+        """
+        开关人名识别
+        参数：
+            - boolean: True->开启；False->关闭
+        """
         self.personrecognition = boolean
-        if boolean:
-            if not self.PersonDict.tree:
-                person_dictionary = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                    'algorithm/viterbiMat/dictionary/person/nr.txt'))
-                temp_dir = self.temp_dir
-                initialize(person_dictionary, temp_dir, self.PersonDict, 'person')
+        if boolean and (not self.PersonDict.tree):
+            person_dictionary = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                'algorithm/viterbiMat/dictionary/person/nr.txt'))
+            initialize(person_dictionary, self.temp_dir, self.PersonDict, 'person')
 
     def enable_placerecognition(self, boolean=True):
+        """
+        开关地名识别
+        参数：
+            - boolean: True->开启；False->关闭
+        """
         self.placerecognition = boolean
-        if boolean:
-            if not self.PlaceDict.tree:
-                place_dictionary = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                   'algorithm/viterbiMat/dictionary/place/ns.txt'))
-                temp_dir = self.temp_dir
-                initialize(place_dictionary, temp_dir, self.PlaceDict, 'place')
+        if boolean and (not self.PlaceDict.tree):
+            place_dictionary = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                               'algorithm/viterbiMat/dictionary/place/ns.txt'))
+            initialize(place_dictionary, self.temp_dir, self.PlaceDict, 'place')
 
     def enable_organizationrecognition(self, boolean=True):
+        """
+        开关机构名识别
+        参数：
+            - boolean: True->开启；False->关闭
+        """
         self.organizationrecognition = boolean
-        p1 = self.personrecognition
-        p2 = self.placerecognition
         if boolean:
             if not self.personrecognition:
                 self.enable_personrecognition()
+                self.personrecognition = False
             if not self.placerecognition:
                 self.enable_placerecognition()
+                self.placerecognition = False
             if not self.OrganizationDict.tree:
                 organization_dictionary = os.path.abspath(os.path.join(
-                                        os.path.dirname(__file__),
-                                        'algorithm/viterbiMat/dictionary/organization/nt.txt'))
-                temp_dir = self.temp_dir
-                initialize(organization_dictionary, temp_dir, self.OrganizationDict, 'organization')
-        self.personrecognition = p1
-        self.placerecognition = p2
+                                                          os.path.dirname(__file__),
+                                                          'algorithm/viterbiMat/dictionary/organization/nt.txt'))
+                initialize(organization_dictionary, self.temp_dir, self.OrganizationDict, 'organization')
 
     def enable_all(self, boolean=True):
+        """
+        一次开关所有实体识别
+        参数：
+            - boolean: True->开启；False->关闭
+        """
         self.enable_personrecognition(boolean)
         self.enable_placerecognition(boolean)
         self.enable_organizationrecognition(boolean)
 
     def enable_POS(self, boolean=True):
+        """
+        开关词性标注
+        参数：
+            - boolean: True->开启；False->关闭
+        """
         self.POS = boolean
 
     def enable_debug(self, boolean=True):
+        """
+        开关打印debug信息
+        参数：
+            - boolean: True->开启；False->关闭
+        """
         self.debug = boolean
 
     @staticmethod
     def enable_log(boolean=True):
+        """
+        开关显示log信息
+        参数：
+            - boolean: True->开启；False->关闭
+        """
         if boolean:
             logger.setLevel(1)
         else:
             logger.setLevel(0)
 
-
 if '__main__' == __name__:
     a = Segment()
     a.enable_log(False)
-    a.enable_POS()
-    a.enable_debug()
     s = '朝阳区崔各庄乡来广营东路费家村西北口20米'
     a.enable_organizationrecognition()
     print(a.lcut(s))

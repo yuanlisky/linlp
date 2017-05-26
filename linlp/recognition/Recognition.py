@@ -9,7 +9,7 @@ from linlp.recognition.OrganizationRecognition import *
 
 def initialize(dictionary, temp_dir, DictTree, cachename):
     """
-    初始化
+    初始化实体识别字典
     """
     cache_file = _setup_cache(dictionary, temp_dir, DictTree, cachename)
     if not DictTree.tree:  # 没有建立新缓存则直接从缓存载入
@@ -18,9 +18,6 @@ def initialize(dictionary, temp_dir, DictTree, cachename):
 
 
 def _gen_pfdict(dictionary, DictTree):
-    """
-    通过字典建立前缀词典
-    """
     with open(dictionary, 'rb') as f:
         dict_name = f.name
         for lineno, ln in enumerate(f, 1):
@@ -38,7 +35,7 @@ def _gen_pfdict(dictionary, DictTree):
 
 def _setup_cache(dictionary, temp_dir, DictTree, cachename):
     """
-    根据绝对路径，建立缓存,缓存命名根据主词典绝对路径MD5值
+    根据绝对路径，建立缓存
     """
     cache_file_name = "linlp." + cachename + ".cache"
     cache_file = os.path.join(temp_dir, cache_file_name)
@@ -52,10 +49,10 @@ def _setup_cache(dictionary, temp_dir, DictTree, cachename):
 
 
 def recognition(obs, path, AC, types, debug):
-    sentence = []
-    pos = []
-    res = {}
-    s = []
+    sentence = list()
+    pos = list()
+    res = dict()
+    s = list()
     length = len(obs)
     for no in range(length):
         sentence.append(obs[no][0])

@@ -7,7 +7,6 @@ from linlp.algorithm.viterbiMat.prob_emit_person import prob_emit as emit_p
 def personviterbiSimply(obs, DT, obsDT, debug):
     if debug:
         x = obs
-    # obs = [('始##始', 'begin')] + obs + [('末##末', 'end')]
     switch = {'nr': 1, 'nnt': 2}
     length = len(obs)
     for no in range(length):

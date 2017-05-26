@@ -7,7 +7,7 @@ __all__ = ['Ahocorasick', ]
 
 class Node(object):
     def __init__(self):
-        self.next = {}
+        self.next = dict()
         self.fail = None  # 失败指针
         self.isWord = False
 
@@ -24,8 +24,7 @@ class Ahocorasick(object):
 
     def make(self):
         """
-        构建失败路径，失败路径也是指向字典树(节点)
-        :return:
+        构建失败路径
         """
         tmpQueue = list()
         tmpQueue.append(self.__root)
@@ -49,10 +48,10 @@ class Ahocorasick(object):
     def search(self, content):
         """
         返回列表，每个元素为匹配的模式串在句中的起止位置
-        :param content:
-        :return:
+        参数：
+            - content: 要匹配的目标串，类型为字符串或由字符组成的列表
         """
-        result = []
+        result = list()
         startWordIndex = 0
         for currentPosition in range(len(content)):
             word = content[currentPosition]
@@ -79,8 +78,6 @@ class Ahocorasick(object):
     def replace(self, content):
         """
         匹配到的字符串以'*'号表示
-        :param content:
-        :return:
         """
         replacepos = self.search(content)
         result = content
